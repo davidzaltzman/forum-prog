@@ -2,7 +2,7 @@ name: Run Forum Notifier
 
 on:
   schedule:
-    - cron: '*/10 * * * *' # כל 10 דקות
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -37,5 +37,5 @@ jobs:
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add last.txt
         git commit -m "עדכון אוטומטי של last.txt" || echo "אין מה לעדכן"
-        git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git
+        git remote set-url origin https://${GH_TOKEN}@github.com/${{ github.repository }}.git
         git push
