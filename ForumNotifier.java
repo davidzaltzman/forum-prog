@@ -53,9 +53,7 @@ public class ForumNotifier {
 
                     boolean likelyAd = false;
                     for (Element el : wrapper.select("span[style], img, iframe, script, blockquote blockquote, div.quoteExpand")) {
-                        // שינוי: בדיקה אם ה-span הוא בגודל פונט קטן עם תוכן "קרדיט: הכריש"
                         if (el.tagName().equals("span") && "9px".equals(el.attr("style").replaceAll("\\s", "").replace("font-size:", "")) && el.text().contains("קרדיט: הכריש")) {
-                            // אם האלמנט הזה לא עטוף ישירות בתוך bbWrapper - סימן שזו פרסומת
                             if (!el.parents().select("div.bbWrapper").contains(el.parent())) {
                                 likelyAd = true;
                                 break;
@@ -179,9 +177,10 @@ public class ForumNotifier {
     }
 
     private static void sendEmail(List<String> messages) {
-        String to = "dr0533137306@gmail.com";
-        String from = "davidr202120@gmail.com";
-        String password = "fqgg ioxb pdsm qhgk";
+        // ✅ שינוי: שורת כתובת, משתמש וסיסמה נמשכים מה־GitHub Secrets
+        String to = System.getenv("EMAIL_TO");
+        String from = System.getenv("EMAIL_FROM");
+        String password = System.getenv("EMAIL_PASSWORD");
 
         Properties props = new Properties();
         props.put("mail.smtp.host", "smtp.gmail.com");
