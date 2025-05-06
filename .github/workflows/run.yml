@@ -1,0 +1,38 @@
+name: Run Forum Notifier
+
+on:
+  schedule:
+    - cron: '*/10 * * * *' # כל 10 דקות
+  workflow_dispatch:
+
+jobs:
+  run-forum-notifier:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: Compile Java code
+      run: javac -cp ".:lib/jsoup-1.15.4.jar:lib/jakarta.mail.jar" ForumNotifier.java
+
+    - name: Run Java program
+      env:
+        EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      run: java -cp ".:lib/jsoup-1.15.4.jar:lib/jakarta.mail.jar" ForumNotifier
+
+    - name: Commit updated last.txt
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add last.txt
+        git commit -m "עדכון אוטומטי של last.txt" || echo "אין מה לעדכן"
+        git push
