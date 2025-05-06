@@ -20,14 +20,14 @@ jobs:
         java-version: '17'
 
     - name: Compile Java code
-      run: javac -cp ".:lib/jsoup-1.15.4.jar:lib/jakarta.mail.jar" ForumNotifier.java
+      run: javac -cp ".:lib/jsoup-1.20.1.jar:lib/jakarta.mail-2.0.1.jar:lib/jakarta.activation-api-2.0.1.jar:lib/jakarta.activation-2.0.1.jar" ForumNotifier.java
 
     - name: Run Java program
       env:
         EMAIL_TO: ${{ secrets.EMAIL_TO }}
         EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
         EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-      run: java -cp ".:lib/jsoup-1.15.4.jar:lib/jakarta.mail.jar" ForumNotifier
+      run: java -cp ".:lib/jsoup-1.20.1.jar:lib/jakarta.mail-2.0.1.jar:lib/jakarta.activation-api-2.0.1.jar:lib/jakarta.activation-2.0.1.jar" ForumNotifier
 
     - name: Commit updated last.txt
       run: |
