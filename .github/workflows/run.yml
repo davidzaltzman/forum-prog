@@ -30,12 +30,12 @@ jobs:
       run: java -cp ".:lib/jsoup-1.20.1.jar:lib/jakarta.mail-2.0.1.jar:lib/jakarta.activation-api-2.0.1.jar:lib/jakarta.activation-2.0.1.jar" ForumNotifier
 
     - name: Commit updated last.txt
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add last.txt
         git commit -m "עדכון אוטומטי של last.txt" || echo "אין מה לעדכן"
-        
-        # הוספת token לגישה כתיבה לצורך Git push
-        git remote set-url origin https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+        git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git
         git push
