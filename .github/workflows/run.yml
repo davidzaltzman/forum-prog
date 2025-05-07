@@ -1,41 +1,39 @@
-name: Run Forum Notifier
+name: Check for New Prog Messages
 
 on:
   schedule:
-    - cron: '*/10 * * * *'
-  workflow_dispatch:
+    - cron: '*/10 * * * *'  # כל 10 דקות
+  workflow_dispatch:        # מאפשר גם הפעלה ידנית
+
+permissions:
+  contents: write  # מאפשר כתיבה לקבצים (commit)
 
 jobs:
-  run-forum-notifier:
+  check-prog:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Java
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'  # או הגרסה שבה אתה משתמש
 
-    - name: Compile Java code
-      run: javac -cp ".:lib/jsoup-1.20.1.jar:lib/jakarta.mail-2.0.1.jar:lib/jakarta.activation-api-2.0.1.jar:lib/jakarta.activation-2.0.1.jar" ForumNotifier.java
+      - name: Compile Java code
+        run: javac -d out $(find src -name "*.java")
 
-    - name: Run Java program
-      env:
-        EMAIL_TO: ${{ secrets.EMAIL_TO }}
-        EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-        EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-      run: java -cp ".:lib/jsoup-1.20.1.jar:lib/jakarta.mail-2.0.1.jar:lib/jakarta.activation-api-2.0.1.jar:lib/jakarta.activation-2.0.1.jar" ForumNotifier
+      - name: Run Prog Checker
+        run: java -cp out your.main.ClassName
 
-    - name: Commit updated last.txt
-      env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add last.txt
-        git commit -m "עדכון אוטומטי של last.txt" || echo "אין מה לעדכן"
-        git remote set-url origin https://${GH_TOKEN}@github.com/${{ github.repository }}.git
-        git push
+      - name: Commit changes (if any)
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add last-messages.txt
+          git diff --cached --quiet || git commit -m "Update last-messages.txt"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
