@@ -6,7 +6,7 @@ on:
   workflow_dispatch:        # מאפשר גם הפעלה ידנית
 
 permissions:
-  contents: write  # מאפשר כתיבה לקבצים (commit)
+  contents: write
 
 jobs:
   check-prog:
@@ -20,20 +20,25 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21'  # או הגרסה שבה אתה משתמש
+          java-version: '21'
+
+      - name: Create output directory
+        run: mkdir -p out
 
       - name: Compile Java code
-        run: javac -d out $(find src -name "*.java")
+        run: |
+          javac -cp "lib/*" -d out ForumNotifier.java
 
       - name: Run Prog Checker
-        run: java -cp out your.main.ClassName
+        run: |
+          java -cp "out:lib/*" ForumNotifier
 
       - name: Commit changes (if any)
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add last-messages.txt
-          git diff --cached --quiet || git commit -m "Update last-messages.txt"
+          git add last.txt
+          git diff --cached --quiet || git commit -m "Update last.txt"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
