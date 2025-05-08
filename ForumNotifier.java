@@ -144,9 +144,9 @@ public class ForumNotifier {
             if (!newMessages.isEmpty()) {
                 writeLatestMessages(allMessages);
                 sendEmail(newMessages);
-            } else {
+            } /* else {
                 sendEmail(Collections.singletonList("<i>אין הודעות חדשות.</i>"));
-            }
+            }*/
 
         } catch (Exception e) {
             e.printStackTrace();
