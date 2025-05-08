@@ -25,12 +25,8 @@ public class ForumNotifier {
             int lastPage = getLastPage(client);
 
             for (int i = lastPage - PAGES_TO_SCAN + 1; i <= lastPage; i++) {
-                String url = "https://www.prog.co.il/threads/%D7%A2%D7%93%D7%9B%D7%95%D7%A0%D7%99%D7%9D-%D7%91%D7%9C%D7%91%D7%93.917045/page-" + i;
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(new URI(url))
-                        .GET()
-                        .build();
-
+                String url = "https://www.prog.co.il/threads/עדכונים-בלבד.917045/page-" + i;
+                HttpRequest request = HttpRequest.newBuilder().uri(new URI(url)).GET().build();
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
                 if (response.statusCode() / 100 == 3) {
@@ -50,24 +46,40 @@ public class ForumNotifier {
                     boolean hasQuote = quote != null && replyExpand != null;
 
                     Elements spoilers = wrapper.select("div.bbCodeBlock.bbCodeBlock--spoiler");
+                    boolean hasSpoiler = !spoilers.isEmpty();
 
-                    boolean likelyAd = false;
-                    for (Element el : wrapper.select("span[style], img, iframe, script, blockquote blockquote, div.quoteExpand")) {
-                        if (el.tagName().equals("span") && "9px".equals(el.attr("style").replaceAll("\\s", "").replace("font-size:", "")) && el.text().contains("קרדיט: הכריש")) {
-                            if (!el.parents().select("div.bbWrapper").contains(el.parent())) {
-                                likelyAd = true;
-                                break;
-                            }
-                        } else {
-                            likelyAd = true;
+                    boolean spoilerHasLink = false;
+                    for (Element spoiler : spoilers) {
+                        if (!spoiler.select("a").isEmpty()) {
+                            spoilerHasLink = true;
                             break;
                         }
                     }
 
-                    Elements links = wrapper.select("a");
-                    if (!links.isEmpty() && !hasQuote) {
-                        likelyAd = true;
+                    boolean likelyAd = false;
+                    if (hasSpoiler && !spoilerHasLink) {
+                        // מותר אלמנטים "אסורים"
+                    } else {
+                        for (Element el : wrapper.select("span[style], img, iframe, script, blockquote blockquote, div.quoteExpand")) {
+                            if (el.tagName().equals("span")
+                                    && "9px".equals(el.attr("style").replaceAll("\\s", "").replace("font-size:", ""))
+                                    && el.text().contains("קרדיט: הכריש")) {
+                                if (!el.parents().select("div.bbWrapper").contains(el.parent())) {
+                                    likelyAd = true;
+                                    break;
+                                }
+                            } else {
+                                likelyAd = true;
+                                break;
+                            }
+                        }
+
+                        Elements links = wrapper.select("a");
+                        if (!links.isEmpty() && !hasQuote && !hasSpoiler) {
+                            likelyAd = true;
+                        }
                     }
+
                     if (likelyAd) continue;
 
                     StringBuilder messageBuilder = new StringBuilder();
@@ -84,6 +96,7 @@ public class ForumNotifier {
 
                         quote.remove();
                         replyExpand.remove();
+                        for (Element spoiler : spoilers) spoiler.remove(); // הוסר לפני חילוץ תגובה
 
                         String replyText = wrapper.text().trim();
                         if (!replyText.isEmpty()) {
@@ -92,10 +105,9 @@ public class ForumNotifier {
                                     .append(replyText.replaceAll("\\n", "<br>"))
                                     .append("</div>");
                         }
+
                     } else {
-                        for (Element spoiler : spoilers) {
-                            spoiler.remove();
-                        }
+                        for (Element spoiler : spoilers) spoiler.remove(); // הוסר לפני חילוץ טקסט
 
                         String text = wrapper.text().trim();
                         if (!text.isEmpty()) {
@@ -103,20 +115,21 @@ public class ForumNotifier {
                                     .append(text.replaceAll("\\n", "<br>"))
                                     .append("</div>");
                         }
+                    }
 
-                        for (Element spoiler : spoilers) {
-                            Element spoilerTitle = spoiler.selectFirst(".bbCodeBlock-title");
-                            Element spoilerContent = spoiler.selectFirst(".bbCodeBlock-content");
+                    // הצגת הספוילרים כריבועים נפרדים
+                    for (Element spoiler : spoilers) {
+                        Element spoilerTitle = spoiler.selectFirst(".bbCodeBlock-title");
+                        Element spoilerContent = spoiler.selectFirst(".bbCodeBlock-content");
 
-                            String title = spoilerTitle != null ? spoilerTitle.text().trim() : "ספוילר";
-                            String content = spoilerContent != null ? spoilerContent.text().trim() : "";
+                        String title = spoilerTitle != null ? spoilerTitle.text().trim() : "ספוילר";
+                        String content = spoilerContent != null ? spoilerContent.text().trim() : "";
 
-                            if (!content.isEmpty()) {
-                                messageBuilder.append("<div style='margin-top: 10px; background: #f5f5f5; border-left: 5px solid #999; padding: 10px; border-radius: 8px;'>")
-                                        .append("<b>").append(title).append(":</b><br>")
-                                        .append("<span style='color: #333;'>").append(content.replaceAll("\\n", "<br>")).append("</span>")
-                                        .append("</div>");
-                            }
+                        if (!content.isEmpty()) {
+                            messageBuilder.append("<div style='margin-top: 10px; background: #fff0f5; border: 1px solid #f5b7b1; padding: 10px; border-radius: 10px;'>")
+                                    .append("🤐 <b>").append(title).append(":</b><br>")
+                                    .append("<span style='color: #333;'>").append(content.replaceAll("\\n", "<br>")).append("</span>")
+                                    .append("</div>");
                         }
                     }
 
@@ -177,7 +190,6 @@ public class ForumNotifier {
     }
 
     private static void sendEmail(List<String> messages) {
-        // ✅ שינוי: שורת כתובת, משתמש וסיסמה נמשכים מה־GitHub Secrets
         String to = System.getenv("EMAIL_TO");
         String from = System.getenv("EMAIL_FROM");
         String password = System.getenv("EMAIL_PASSWORD");
@@ -197,16 +209,8 @@ public class ForumNotifier {
         try {
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(from));
-
-            // שליחה לכמה כתובות
-            String[] recipients = to.split(",");
-            InternetAddress[] recipientAddresses = new InternetAddress[recipients.length];
-            for (int i = 0; i < recipients.length; i++) {
-                recipientAddresses[i] = new InternetAddress(recipients[i].trim());
-            }
-
-            message.setRecipients(Message.RecipientType.TO, recipientAddresses);
-            message.setSubject("\uD83D\uDCEC עדכונים מהפורום פרוג");
+            message.setRecipient(Message.RecipientType.TO, new InternetAddress(to));
+            message.setSubject("📬 עדכונים מהפורום פרוג");
 
             StringBuilder emailBody = new StringBuilder("<html><body style='font-family: Arial; direction: rtl;'>");
             for (String msg : messages) {
@@ -226,12 +230,8 @@ public class ForumNotifier {
     }
 
     private static int getLastPage(HttpClient client) throws Exception {
-        String url = "https://www.prog.co.il/threads/%D7%A2%D7%93%D7%9B%D7%95%D7%A0%D7%99%D7%9D-%D7%91%D7%9C%D7%91%D7%93.917045/page-9999";
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI(url))
-                .GET()
-                .build();
-
+        String url = "https://www.prog.co.il/threads/עדכונים-בלבד.917045/page-9999";
+        HttpRequest request = HttpRequest.newBuilder().uri(new URI(url)).GET().build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() / 100 == 3) {
