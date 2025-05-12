@@ -23,6 +23,11 @@ public class ForumNotifier {
             List<String> allMessages = new ArrayList<>();
             List<String> newMessages;
             int lastPage = getLastPage(client);
+                if (lastPage == 1) {
+                     sendEmail(Collections.singletonList("<div style='color: red; font-weight: bold;'>❌ לא הצלחתי לתפוס את מספר העמוד מהאשכול.</div>"));
+            return;
+        }
+
 
             for (int i = lastPage - PAGES_TO_SCAN + 1; i <= lastPage; i++) {
                 String url = "https://www.prog.co.il/threads/עדכונים-בלבד.917045/page-" + i;
