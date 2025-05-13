@@ -23,11 +23,10 @@ public class ForumNotifier {
             List<String> allMessages = new ArrayList<>();
             List<String> newMessages;
             int lastPage = getLastPage(client);
-                if (lastPage == 1) {
-                     sendEmail(Collections.singletonList("<div style='color: red; font-weight: bold;'>❌ לא הצלחתי לתפוס את מספר העמוד מהאשכול.</div>"));
-            return;
-        }
-
+            if (lastPage == 1) {
+                sendEmail(Collections.singletonList("<div style='color: red; font-weight: bold;'>❌ לא הצלחתי לתפוס את מספר העמוד מהאשכול.</div>"));
+                return;
+            }
 
             for (int i = lastPage - PAGES_TO_SCAN + 1; i <= lastPage; i++) {
                 String url = "https://www.prog.co.il/threads/עדכונים-בלבד.917045/page-" + i;
@@ -65,15 +64,14 @@ public class ForumNotifier {
                     if (hasSpoiler && !spoilerHasLink) {
                         // מותר אלמנטים "אסורים"
                     } else {
-                        for (Element el : wrapper.select("span[style], img, iframe, script, blockquote blockquote, div.quoteExpand")) {
-                            if (el.tagName().equals("span")
-                                    && "9px".equals(el.attr("style").replaceAll("\\s", "").replace("font-size:", ""))
-                                    && el.text().contains("קרדיט: הכריש")) {
-                                if (!el.parents().select("div.bbWrapper").contains(el.parent())) {
+                        for (Element el : wrapper.select("*")) {
+                            // החרגת span אם הוא ישירות תחת bbWrapper
+                            if (el.tagName().equals("span")) {
+                                if (!el.parent().equals(wrapper)) {
                                     likelyAd = true;
                                     break;
                                 }
-                            } else {
+                            } else if (el.is("img, iframe, script, blockquote blockquote, div.quoteExpand")) {
                                 likelyAd = true;
                                 break;
                             }
@@ -101,7 +99,7 @@ public class ForumNotifier {
 
                         quote.remove();
                         replyExpand.remove();
-                        for (Element spoiler : spoilers) spoiler.remove(); // הוסר לפני חילוץ תגובה
+                        for (Element spoiler : spoilers) spoiler.remove();
 
                         String replyText = wrapper.text().trim();
                         if (!replyText.isEmpty()) {
@@ -112,7 +110,7 @@ public class ForumNotifier {
                         }
 
                     } else {
-                        for (Element spoiler : spoilers) spoiler.remove(); // הוסר לפני חילוץ טקסט
+                        for (Element spoiler : spoilers) spoiler.remove();
 
                         String text = wrapper.text().trim();
                         if (!text.isEmpty()) {
@@ -122,7 +120,6 @@ public class ForumNotifier {
                         }
                     }
 
-                    // הצגת הספוילרים כריבועים נפרדים
                     for (Element spoiler : spoilers) {
                         Element spoilerTitle = spoiler.selectFirst(".bbCodeBlock-title");
                         Element spoilerContent = spoiler.selectFirst(".bbCodeBlock-content");
@@ -149,9 +146,7 @@ public class ForumNotifier {
             if (!newMessages.isEmpty()) {
                 writeLatestMessages(allMessages);
                 sendEmail(newMessages);
-            } /* else {
-                sendEmail(Collections.singletonList("<i>אין הודעות חדשות.</i>"));
-            }*/
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
