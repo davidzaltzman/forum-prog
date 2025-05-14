@@ -5,6 +5,8 @@ import java.net.http.*;
 import java.nio.file.*;
 import java.io.*;
 import java.util.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -174,7 +176,17 @@ public class ForumNotifier {
     }
 
     private static String getMessageId(String message) {
-        return message.hashCode() + "";
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(message.getBytes());
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hashBytes) {
+                hexString.append(String.format("%02x", b));
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 לא נתמך במערכת", e);
+        }
     }
 
     private static void writeLatestMessages(List<String> messages) {
