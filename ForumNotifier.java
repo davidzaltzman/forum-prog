@@ -18,6 +18,7 @@ public class ForumNotifier {
 
     private static final String LAST_MESSAGE_FILE = "last.txt";
     private static final int PAGES_TO_SCAN = 3;
+    private static final int MAX_STORED_MESSAGES = 100;
 
     public static void main(String[] args) {
         try {
@@ -191,11 +192,22 @@ public class ForumNotifier {
 
     private static void writeLatestMessages(List<String> messages) {
         try {
-            List<String> messageIds = new ArrayList<>();
+            List<String> existingIds = readPreviousMessages();
+            List<String> newIds = new ArrayList<>();
             for (String message : messages) {
-                messageIds.add(getMessageId(message));
+                String id = getMessageId(message);
+                if (!existingIds.contains(id)) {
+                    newIds.add(id);
+                }
             }
-            Files.write(Path.of(LAST_MESSAGE_FILE), messageIds, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            List<String> combined = new ArrayList<>(existingIds);
+            combined.addAll(newIds);
+
+            if (combined.size() >= MAX_STORED_MESSAGES) {
+                Files.write(Path.of(LAST_MESSAGE_FILE), newIds, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            } else {
+                Files.write(Path.of(LAST_MESSAGE_FILE), combined, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            }
         } catch (IOException e) {
             System.err.println("שגיאה בכתיבת הקובץ: " + e.getMessage());
         }
