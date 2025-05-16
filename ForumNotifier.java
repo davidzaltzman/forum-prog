@@ -18,7 +18,7 @@ public class ForumNotifier {
 
     private static final String LAST_MESSAGE_FILE = "last.txt";
     private static final int PAGES_TO_SCAN = 3;
-    private static final int MAX_STORED_MESSAGES = 100;
+    private static final int MAX_STORED_MESSAGES = 200;  // שונה מ־100 ל־200
 
     public static void main(String[] args) {
         try {
@@ -68,7 +68,6 @@ public class ForumNotifier {
                         // מותר אלמנטים "אסורים"
                     } else {
                         for (Element el : wrapper.select("*")) {
-                            // החרגת span אם הוא ישירות תחת bbWrapper
                             if (el.tagName().equals("span")) {
                                 if (!el.parent().equals(wrapper)) {
                                     likelyAd = true;
@@ -200,14 +199,15 @@ public class ForumNotifier {
                     newIds.add(id);
                 }
             }
+
             List<String> combined = new ArrayList<>(existingIds);
             combined.addAll(newIds);
 
-            if (combined.size() >= MAX_STORED_MESSAGES) {
-                Files.write(Path.of(LAST_MESSAGE_FILE), newIds, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            } else {
-                Files.write(Path.of(LAST_MESSAGE_FILE), combined, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            }
+            // שמירה של עד MAX_STORED_MESSAGES האחרונים
+            int start = Math.max(0, combined.size() - MAX_STORED_MESSAGES);
+            List<String> trimmed = combined.subList(start, combined.size());
+
+            Files.write(Path.of(LAST_MESSAGE_FILE), trimmed, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         } catch (IOException e) {
             System.err.println("שגיאה בכתיבת הקובץ: " + e.getMessage());
         }
