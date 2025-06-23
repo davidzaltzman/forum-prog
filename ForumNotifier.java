@@ -49,8 +49,8 @@ public class ForumNotifier {
 
                 for (Element wrapper : wrappers) {
 
-                    // ✅ שורה מתוקנת: אם wrapper מכיל או עטוף ב־<aside class="message-signature">, זו פרסומת
-                    if (!wrapper.parents().select("aside.message-signature").isEmpty() || !wrapper.select("aside.message-signature").isEmpty()) {
+                    // ✅ תוספת חדשה: אם יש חתימה, זו פרסומת
+                    if (!wrapper.select("aside.message-signature").isEmpty()) {
                         continue;
                     }
 
@@ -159,6 +159,8 @@ public class ForumNotifier {
             e.printStackTrace();
         }
     }
+
+    // שאר המתודות נשארו בדיוק אותו דבר...
 
     private static List<String> readPreviousMessages() {
         try {
