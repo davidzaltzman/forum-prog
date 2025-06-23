@@ -18,7 +18,7 @@ public class ForumNotifier {
 
     private static final String LAST_MESSAGE_FILE = "last.txt";
     private static final int PAGES_TO_SCAN = 3;
-    private static final int MAX_STORED_MESSAGES = 200;  // שונה מ־100 ל־200
+    private static final int MAX_STORED_MESSAGES = 200;
 
     public static void main(String[] args) {
         try {
@@ -48,6 +48,12 @@ public class ForumNotifier {
                 Elements wrappers = doc.select("div.bbWrapper");
 
                 for (Element wrapper : wrappers) {
+
+                    // ✅ תוספת חדשה: אם יש חתימה, זו פרסומת
+                    if (!wrapper.select("aside.message-signature").isEmpty()) {
+                        continue;
+                    }
+
                     Element quote = wrapper.selectFirst("blockquote.bbCodeBlock--quote");
                     Element replyExpand = wrapper.selectFirst("div.bbCodeBlock-expandLink");
                     boolean hasQuote = quote != null && replyExpand != null;
@@ -63,16 +69,15 @@ public class ForumNotifier {
                         }
                     }
 
+                    boolean hasSpanInsideWrapper = !wrapper.select("span").isEmpty();
                     boolean likelyAd = false;
+
                     if (hasSpoiler && !spoilerHasLink) {
-                        // מותר אלמנטים "אסורים"
+                        // ספוילר ללא קישורים לא נחשב פרסומת
                     } else {
                         for (Element el : wrapper.select("*")) {
                             if (el.tagName().equals("span")) {
-                                if (!el.parent().equals(wrapper)) {
-                                    likelyAd = true;
-                                    break;
-                                }
+                                continue;
                             } else if (el.is("img, iframe, script, blockquote blockquote, div.quoteExpand")) {
                                 likelyAd = true;
                                 break;
@@ -80,7 +85,7 @@ public class ForumNotifier {
                         }
 
                         Elements links = wrapper.select("a");
-                        if (!links.isEmpty() && !hasQuote && !hasSpoiler) {
+                        if (!links.isEmpty() && !hasQuote && !hasSpoiler && !hasSpanInsideWrapper) {
                             likelyAd = true;
                         }
                     }
@@ -155,6 +160,8 @@ public class ForumNotifier {
         }
     }
 
+    // שאר המתודות נשארו בדיוק אותו דבר...
+
     private static List<String> readPreviousMessages() {
         try {
             return Files.readAllLines(Path.of(LAST_MESSAGE_FILE));
@@ -203,7 +210,6 @@ public class ForumNotifier {
             List<String> combined = new ArrayList<>(existingIds);
             combined.addAll(newIds);
 
-            // שמירה של עד MAX_STORED_MESSAGES האחרונים
             int start = Math.max(0, combined.size() - MAX_STORED_MESSAGES);
             List<String> trimmed = combined.subList(start, combined.size());
 
