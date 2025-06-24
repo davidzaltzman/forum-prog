@@ -149,8 +149,10 @@ public class ForumNotifier {
         }
     }
 
+    // שימו לב השינוי כאן:
     private static List<String> getNewMessages(List<String> allMessages) throws IOException {
-        List<String> previousMessages = readPreviousMessages();
+        // קוראים את ההודעות הקודמות ומכניסים ל-HashSet (לבדיקה מהירה)
+        Set<String> previousMessages = new HashSet<>(readPreviousMessages());
         List<String> newMessages = new ArrayList<>();
         for (String message : allMessages) {
             String messageId = getMessageId(message);
