@@ -49,9 +49,22 @@ public class ForumNotifier {
 
                 for (Element wrapper : wrappers) {
 
-                    // ✅ תוספת חדשה: אם יש חתימה, זו פרסומת
-                    if (!wrapper.select("aside.message-signature").isEmpty()) {
-                        continue;
+                    // ✅ סינון מס' 1: ה-wrapper ייחשב להודעה רק אם ההורה הישיר שלו הוא
+                    //    <article class="message-body js-selectToQuote">
+                    Element parent = wrapper.parent();
+                    if (parent == null || !parent.is("article.message-body.js-selectToQuote")) {
+                        continue; // לא הודעה תקנית
+                    }
+
+                    // ✅ סינון מס' 2: אם ה-wrapper או אחד מאבותיו הוא חתימה — פרסומת
+                    if (wrapper.selectFirst("aside.message-signature") != null ||
+                            wrapper.closest("aside.message-signature") != null) {
+                        continue; // פרסומת
+                    }
+
+                    // ✅ סינון מס' 3: אם הטקסט מכיל את הכללים — פרסומת
+                    if (wrapper.text().contains("כללים למשתתפים באשכול עדכונים זה")) {
+                        continue; // הודעת כללים => פרסומת
                     }
 
                     Element quote = wrapper.selectFirst("blockquote.bbCodeBlock--quote");
@@ -59,38 +72,6 @@ public class ForumNotifier {
                     boolean hasQuote = quote != null && replyExpand != null;
 
                     Elements spoilers = wrapper.select("div.bbCodeBlock.bbCodeBlock--spoiler");
-                    boolean hasSpoiler = !spoilers.isEmpty();
-
-                    boolean spoilerHasLink = false;
-                    for (Element spoiler : spoilers) {
-                        if (!spoiler.select("a").isEmpty()) {
-                            spoilerHasLink = true;
-                            break;
-                        }
-                    }
-
-                    boolean hasSpanInsideWrapper = !wrapper.select("span").isEmpty();
-                    boolean likelyAd = false;
-
-                    if (hasSpoiler && !spoilerHasLink) {
-                        // ספוילר ללא קישורים לא נחשב פרסומת
-                    } else {
-                        for (Element el : wrapper.select("*")) {
-                            if (el.tagName().equals("span")) {
-                                continue;
-                            } else if (el.is("img, iframe, script, blockquote blockquote, div.quoteExpand")) {
-                                likelyAd = true;
-                                break;
-                            }
-                        }
-
-                        Elements links = wrapper.select("a");
-                        if (!links.isEmpty() && !hasQuote && !hasSpoiler && !hasSpanInsideWrapper) {
-                            likelyAd = true;
-                        }
-                    }
-
-                    if (likelyAd) continue;
 
                     StringBuilder messageBuilder = new StringBuilder();
 
@@ -159,8 +140,6 @@ public class ForumNotifier {
             e.printStackTrace();
         }
     }
-
-    // שאר המתודות נשארו בדיוק אותו דבר...
 
     private static List<String> readPreviousMessages() {
         try {
