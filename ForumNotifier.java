@@ -49,22 +49,26 @@ public class ForumNotifier {
 
                 for (Element wrapper : wrappers) {
 
-                    // ✅ סינון מס' 1: ה-wrapper ייחשב להודעה רק אם ההורה הישיר שלו הוא
-                    //    <article class="message-body js-selectToQuote">
+                    // ✅ סינון מס' 1
                     Element parent = wrapper.parent();
                     if (parent == null || !parent.is("article.message-body.js-selectToQuote")) {
-                        continue; // לא הודעה תקנית
+                        continue;
                     }
 
-                    // ✅ סינון מס' 2: אם ה-wrapper או אחד מאבותיו הוא חתימה — פרסומת
+                    // ✅ סינון מס' 2
                     if (wrapper.selectFirst("aside.message-signature") != null ||
-                            wrapper.closest("aside.message-signature") != null) {
-                        continue; // פרסומת
+                        wrapper.closest("aside.message-signature") != null) {
+                        continue;
                     }
 
-                    // ✅ סינון מס' 3: אם הטקסט מכיל את הכללים — פרסומת
+                    // ✅ סינון מס' 3
                     if (wrapper.text().contains("כללים למשתתפים באשכול עדכונים זה")) {
-                        continue; // הודעת כללים => פרסומת
+                        continue;
+                    }
+
+                    // ✅ סינון מס' 4: אם קיימת תגית עם class בשם "perek"
+                    if (!wrapper.select(".perek").isEmpty()) {
+                        continue; // הודעה עם תגית perek => פרסומת
                     }
 
                     Element quote = wrapper.selectFirst("blockquote.bbCodeBlock--quote");
@@ -149,9 +153,7 @@ public class ForumNotifier {
         }
     }
 
-    // שימו לב השינוי כאן:
     private static List<String> getNewMessages(List<String> allMessages) throws IOException {
-        // קוראים את ההודעות הקודמות ומכניסים ל-HashSet (לבדיקה מהירה)
         Set<String> previousMessages = new HashSet<>(readPreviousMessages());
         List<String> newMessages = new ArrayList<>();
         for (String message : allMessages) {
